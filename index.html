@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오늘의 여행 사진 한 컷</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f6f7f4; --ink: #1c2530; --sea: #0d7480; --sea-dark: #095760;
+    --mist: #e3eae8; --line: #c9d3d1; --warn: #a63d2f;
+    --serif: "Gowun Batang", "Noto Serif KR", serif;
+    --sans: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper: #12181f; --ink: #e8eeee; --sea: #4fb5c0; --sea-dark: #7ccdd6; --mist: #1d2730; --line: #34424d; --warn: #ef8f80; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.6 var(--sans); }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  h1 { font: 700 clamp(26px, 5vw, 38px)/1.2 var(--serif); margin: 0; }
+  h2 { font: 700 22px/1.3 var(--serif); margin: 40px 0 12px; }
+  .sub { margin: 4px 0 0; color: color-mix(in srgb, var(--ink) 65%, transparent); font-size: 14px; }
+  #auth { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid var(--sea); background: var(--sea); color: #fff; padding: 8px 14px; }
+  button.ghost { background: transparent; color: var(--sea-dark); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button:focus-visible, textarea:focus-visible { outline: 3px solid var(--sea); outline-offset: 2px; }
+  #status { min-height: 24px; margin: 12px 0 0; font-size: 14px; }
+  #status.error { color: var(--warn); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 16px; }
+  .photo { margin: 0; background: var(--mist); border: 2px solid transparent; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+  .photo.selected { border-color: var(--sea); }
+  .photo img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--line); }
+  .photo figcaption { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .photo .t { font: 700 17px/1.4 var(--serif); }
+  .photo .m { font-size: 13px; color: color-mix(in srgb, var(--ink) 65%, transparent); }
+  .photo button { margin-top: auto; align-self: flex-start; }
+  #composer { margin-top: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--mist); }
+  #composer[hidden] { display: none; }
+  textarea { width: 100%; min-height: 72px; resize: vertical; font: inherit; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); }
+  .row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 8px; flex-wrap: wrap; }
+  .reviews { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  .reviews li { display: flex; gap: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+  .reviews img { width: 96px; height: 72px; object-fit: cover; border-radius: 4px; flex: none; background: var(--line); }
+  .reviews .c { font: 400 18px/1.5 var(--serif); margin: 0; }
+  .reviews .m { font-size: 13px; color: color-mix(in srgb, var(--ink) 65%, transparent); }
+  .empty { color: color-mix(in srgb, var(--ink) 65%, transparent); }
+  .credit { margin-top: 48px; font-size: 13px; color: color-mix(in srgb, var(--ink) 65%, transparent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>오늘의 여행 사진 한 컷</h1>
+      <p class="sub">마음에 드는 사진 한 장을 고르고, 한 줄로 남겨 보세요.</p>
+    </div>
+    <div id="auth"></div>
+  </header>
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <section aria-labelledby="h-photos">
+    <h2 id="h-photos" style="margin-top:24px">여행 사진 5장</h2>
+    <div id="photos" class="grid"></div>
+    <div class="row"><span></span><button id="more" class="ghost" type="button">다른 사진 5장 보기</button></div>
+  </section>
+
+  <section id="composer" hidden aria-labelledby="h-write">
+    <h2 id="h-write" style="margin-top:0">한 줄 감상</h2>
+    <p id="picked" class="sub"></p>
+    <textarea id="comment" maxlength="100" placeholder="이 사진을 보고 떠오른 생각을 한 줄로 적어 주세요."></textarea>
+    <div class="row">
+      <span id="count" class="sub">0 / 100</span>
+      <button id="save" type="button">감상 저장</button>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-mine">
+    <h2 id="h-mine">내가 남긴 감상</h2>
+    <ul id="reviews" class="reviews"></ul>
+  </section>
+
+  <p class="credit">사진 출처: 한국관광공사 관광사진 정보 (공공데이터포털)</p>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  import { getFirestore, collection, addDoc, query, where, getDocs, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  /* ===== 여기 두 가지만 본인 값으로 바꾸세요 ===== */
+  // 1) 공공데이터포털 인증키 (마이페이지 > 데이터활용 > Open API > 일반 인증키)
+  const DATA_GO_KR_KEY = "00664864bc0879fbf67dad82adbe135e3e0fdfbdf26f3cf6c05aa09f27cb4414";
+  // 2) Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹)의 firebaseConfig
+  const firebaseConfig = {
+    apiKey: "AIzaSyC109ym5QdWvhkESEN5GR_Yz14EdSXTn_8",
+    authDomain: "travel-photo-150f9.firebaseapp.com",
+    projectId: "travel-photo-150f9",
+    appId: "1:39852310831:web:ef52f64a615d7185a321da"
+  };
+  /* ============================================ */
+
+  const API = "https://apis.data.go.kr/B551011/PhotoGalleryService1/galleryList1";
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const $ = (id) => document.getElementById(id);
+  let user = null, page = 1, photos = [], selected = null;
+
+  function say(msg, isError = false) {
+    const el = $("status");
+    el.textContent = msg;
+    el.className = isError ? "error" : "";
+  }
+
+  // 인증키가 Encoding 키(%포함)든 Decoding 키든 한 번만 인코딩되게 처리
+  const keyParam = () => DATA_GO_KR_KEY.includes("%") ? DATA_GO_KR_KEY : encodeURIComponent(DATA_GO_KR_KEY);
+  const https = (u) => (u || "").replace(/^http:\/\//, "https://");
+
+  /* ---------- ① Open API 불러오기 ---------- */
+  async function loadPhotos() {
+    say("사진을 불러오는 중…");
+    $("photos").replaceChildren();
+    try {
+      const url = `${API}?serviceKey=${keyParam()}&numOfRows=5&pageNo=${page}` +
+                  `&MobileOS=ETC&MobileApp=TravelShot&arrange=C&_type=json`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const code = data?.response?.header?.resultCode;
+      if (code && code !== "0000") throw new Error(data.response.header.resultMsg || code);
+      let items = data?.response?.body?.items?.item ?? [];
+      if (!Array.isArray(items)) items = [items];
+      photos = items.map((it) => ({
+        id: String(it.galContentId),
+        title: it.galTitle || "제목 없음",
+        place: it.galPhotographyLocation || "",
+        image: https(it.galWebImageUrl)
+      }));
+      if (!photos.length) { say("불러온 사진이 없습니다. '다른 사진 5장 보기'를 눌러 보세요.", true); return; }
+      renderPhotos();
+      say("");
+    } catch (e) {
+      say(`사진을 불러오지 못했습니다. (${e.message}) 인증키와 활용신청 승인 여부를 확인해 주세요.`, true);
+    }
+  }
+
+  function renderPhotos() {
+    const box = $("photos");
+    box.replaceChildren();
+    photos.forEach((p) => {
+      const fig = document.createElement("figure");
+      fig.className = "photo" + (selected?.id === p.id ? " selected" : "");
+      const img = document.createElement("img");
+      img.src = p.image; img.alt = p.title; img.loading = "lazy";
+      const cap = document.createElement("figcaption");
+      const t = document.createElement("span"); t.className = "t"; t.textContent = p.title;
+      const m = document.createElement("span"); m.className = "m"; m.textContent = p.place;
+      const b = document.createElement("button"); b.type = "button"; b.textContent = "이 사진 고르기";
+      b.addEventListener("click", () => pick(p));
+      cap.append(t, m, b);
+      fig.append(img, cap);
+      box.append(fig);
+    });
+  }
+
+  function pick(p) {
+    selected = p;
+    renderPhotos();
+    $("picked").textContent = `선택한 사진: ${p.title}`;
+    $("composer").hidden = false;
+    updateSaveState();
+    $("comment").focus();
+  }
+
+  /* ---------- ② Firebase 로그인 ---------- */
+  function renderAuth() {
+    const box = $("auth");
+    box.replaceChildren();
+    if (user) {
+      const name = document.createElement("span");
+      name.textContent = `${user.displayName || user.email} 님`;
+      const out = document.createElement("button");
+      out.type = "button"; out.className = "ghost"; out.textContent = "로그아웃";
+      out.addEventListener("click", () => signOut(auth));
+      box.append(name, out);
+    } else {
+      const inn = document.createElement("button");
+      inn.type = "button"; inn.textContent = "Google로 로그인";
+      inn.addEventListener("click", async () => {
+        try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+        catch (e) {
+          const hint = e.code === "auth/unauthorized-domain"
+            ? "Firebase 콘솔 > Authentication > 설정 > 승인된 도메인에 이 사이트 도메인을 추가해 주세요."
+            : e.code;
+          say(`로그인에 실패했습니다. ${hint}`, true);
+        }
+      });
+      box.append(inn);
+    }
+  }
+
+  onAuthStateChanged(auth, (u) => {
+    user = u;
+    renderAuth();
+    updateSaveState();
+    loadReviews();
+  });
+
+  /* ---------- ③ Firestore 저장 / 조회 ---------- */
+  function updateSaveState() {
+    const ok = !!user && !!selected && $("comment").value.trim().length > 0;
+    $("save").disabled = !ok;
+    $("save").title = user ? "" : "로그인 후 저장할 수 있습니다";
+  }
+
+  $("comment").addEventListener("input", () => {
+    $("count").textContent = `${$("comment").value.length} / 100`;
+    updateSaveState();
+  });
+
+  $("save").addEventListener("click", async () => {
+    $("save").disabled = true;
+    try {
+      await addDoc(collection(db, "reviews"), {
+        uid: user.uid,
+        userName: user.displayName || "",
+        photoId: selected.id,
+        photoTitle: selected.title,
+        photoUrl: selected.image,
+        comment: $("comment").value.trim(),
+        createdAt: serverTimestamp()
+      });
+      $("comment").value = "";
+      $("count").textContent = "0 / 100";
+      say("감상을 저장했습니다.");
+      await loadReviews();
+    } catch (e) {
+      say(`저장하지 못했습니다. (${e.code || e.message}) Firestore 규칙과 로그인 상태를 확인해 주세요.`, true);
+    }
+    updateSaveState();
+  });
+
+  async function loadReviews() {
+    const list = $("reviews");
+    list.replaceChildren();
+    if (!user) {
+      const li = document.createElement("li");
+      li.className = "empty"; li.textContent = "로그인하면 내가 남긴 감상이 여기에 보입니다.";
+      list.append(li); return;
+    }
+    try {
+      // 복합 색인이 필요 없도록 uid로만 조회하고, 정렬은 브라우저에서 처리
+      const snap = await getDocs(query(collection(db, "reviews"), where("uid", "==", user.uid)));
+      const rows = snap.docs.map((d) => d.data())
+        .sort((a, b) => (b.createdAt?.seconds ?? 9e12) - (a.createdAt?.seconds ?? 9e12));
+      if (!rows.length) {
+        const li = document.createElement("li");
+        li.className = "empty"; li.textContent = "아직 남긴 감상이 없습니다. 사진을 고르고 한 줄을 적어 보세요.";
+        list.append(li); return;
+      }
+      rows.forEach((r) => {
+        const li = document.createElement("li");
+        const img = document.createElement("img"); img.src = r.photoUrl; img.alt = r.photoTitle;
+        const div = document.createElement("div");
+        const c = document.createElement("p"); c.className = "c"; c.textContent = r.comment;
+        const m = document.createElement("span"); m.className = "m"; m.textContent = r.photoTitle;
+        div.append(c, m);
+        li.append(img, div);
+        list.append(li);
+      });
+    } catch (e) {
+      say(`감상을 불러오지 못했습니다. (${e.code || e.message})`, true);
+    }
+  }
+
+  $("more").addEventListener("click", () => { page += 1; loadPhotos(); });
+  loadPhotos();
+</script>
+</body>
+</html>
