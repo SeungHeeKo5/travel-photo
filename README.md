@@ -4,7 +4,7 @@
 
 ## 배포 링크
 
-https://아이디.github.io/저장소명/
+https://seungheeko5.github.io/travel-photo/
 
 ## 사용한 API
 
@@ -26,5 +26,3 @@ https://아이디.github.io/저장소명/
 ## 실행 화면
 
 ![실행 화면](screenshot.png)
-
-> 스크린샷은 저장소 루트에 `screenshot.png`로 올려 주세요. (상대 경로로 넣어야 GitHub에서 이미지가 깨지지 않습니다.)
